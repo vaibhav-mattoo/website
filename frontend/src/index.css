@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+:root {
+  /* Core Colors - DARK MODE DEFAULT */
+  --bg-color: #111;             /* Outer background */
+  --container-bg: #0a0a0a;      /* Inner container background */
+  --text-color: #b5e853;        /* The accent green color */
+  --main-text-color: #eaeaea;   /* The standard body text color */
+  --dim-color: #555;
+  --border-color: #333;
+  
+  /* Glitch Colors */
+  --glitch-color-1: #0ff; 
+  --glitch-color-2: #f0f;
+  
+  /* Layout */
+  --container-width: 800px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--main-text-color); /* UPDATED: Uses variable now */
+  font-family: 'Share Tech Mono', monospace;
+  overflow-x: hidden;
+}
+
+/* --- EFFECT 1: CRT SCANLINE OVERLAY --- */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+#root {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 40px 20px;
+  border-left: 1px dashed var(--border-color);
+  border-right: 1px dashed var(--border-color);
+  min-height: 100vh;
+  background: var(--container-bg); /* UPDATED: Uses variable now */
+  position: relative;
+}
+
+/* Typography & Layout */
+h1, h2, h3 {
+  color: var(--text-color);
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+h1 {
+  font-size: 42px;
+  border-bottom: 1px dashed var(--text-color);
+  padding-bottom: 10px;
+  position: relative;
+  display: inline-block;
+}
+
+h2 { 
+  font-size: 28px; 
+  color: var(--main-text-color); /* UPDATED: Uses variable so it's dark in light mode */
+  margin-top: 40px; 
+}
+
+a { color: var(--text-color); text-decoration: none; font-weight: bold; transition: all 0.2s; }
+
+/* Inverted Hover Effect */
+a:hover { 
+  background-color: var(--text-color); 
+  color: var(--container-bg); /* UPDATED: Invert to background color */
+  text-decoration: none;
+  box-shadow: 0 0 10px var(--text-color);
+}
+
+pre {
+  background: #1a1a1a;
+  border: 1px solid var(--border-color);
+  padding: 15px;
+  color: var(--text-color);
+  overflow-x: auto;
+}
+
+code {
+  font-family: inherit;
+  background: #222;
+  padding: 2px 5px;
+  border: 1px solid var(--border-color);
+}
+
+blockquote {
+  border-left: 4px solid var(--text-color);
+  margin-left: 0;
+  padding-left: 15px;
+  color: var(--dim-color);
+  font-style: italic;
+}
+
+/* --- EFFECT 2: GLITCH ANIMATION CLASS --- */
+.glitch {
+  position: relative;
+}
+
+/* Creates a copy of the text (Cyan) offset to the left */
+.glitch::before {
+  content: attr(data-text);
+  position: absolute;
+  left: -2px;
+  text-shadow: 1px 0 var(--glitch-color-1);
+  top: 0;
+  color: var(--text-color);
+  background: var(--container-bg); /* UPDATED: Matches container background */
+  overflow: hidden;
+  clip: rect(0, 900px, 0, 0);
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+
+/* Creates a copy of the text (Magenta) offset to the right */
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 2px;
+  text-shadow: -1px 0 var(--glitch-color-2);
+  top: 0;
+  color: var(--text-color);
+  background: var(--container-bg); /* UPDATED: Matches container background */
+  overflow: hidden;
+  clip: rect(0, 900px, 0, 0);
+  animation: glitch-anim 2s infinite linear alternate-reverse;
+}
+
+/* The math that makes the text jump around */
+@keyframes glitch-anim {
+  0% { clip: rect(24px, 9999px, 91px, 0); }
+  20% { clip: rect(74px, 9999px, 4px, 0); }
+  40% { clip: rect(31px, 9999px, 80px, 0); }
+  60% { clip: rect(9px, 9999px, 14px, 0); }
+  80% { clip: rect(93px, 9999px, 83px, 0); }
+  100% { clip: rect(48px, 9999px, 19px, 0); }
+}
+
+@keyframes glitch-anim-2 {
+  0% { clip: rect(65px, 9999px, 100px, 0); }
+  20% { clip: rect(12px, 9999px, 59px, 0); }
+  40% { clip: rect(89px, 9999px, 24px, 0); }
+  60% { clip: rect(3px, 9999px, 36px, 0); }
+  80% { clip: rect(45px, 9999px, 7px, 0); }
+  100% { clip: rect(81px, 9999px, 52px, 0); }
+}
+
+/* --- EFFECT 3: BLINKING CURSOR --- */
+.cursor {
+  display: inline-block;
+  width: 10px;
+  height: 1em;
+  background-color: var(--text-color);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+
+/* --- LIGHT MODE OVERRIDES --- */
+body.light-mode {
+  --bg-color: #f0f0f0;           /* Light Grey Background */
+  --container-bg: #ffffff;       /* UPDATED: White inner container */
+  --text-color: #008F11;         /* Darker Green accent */
+  --main-text-color: #333333;    /* UPDATED: Dark body text */
+  --dim-color: #777;
+  --border-color: #ccc;
+  --container-width: 800px;
+}
+
+body.light-mode pre {
+  background: #f5f5f5;
+  color: #333;
+}
+
+body.light-mode code {
+  background: #e0e0e0;
+  color: #d63384; 
+}
+
+/* Fix the overlay for light mode (make it subtle) */
+body.light-mode::after {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03),
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+/* Toggle Button Styling */
+.theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: 1px solid var(--text-color);
+  color: var(--text-color);
+  padding: 5px 10px;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  z-index: 1000; /* Ensure it sits above the CRT overlay */
+}
+
+.theme-toggle:hover {
+  background: var(--text-color);
+  color: var(--container-bg); /* UPDATED: Invert to container background */
+}
