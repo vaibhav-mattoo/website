@@ -33,7 +33,8 @@ class Note(BaseModel):
 
 
 # Route 1: Serve the Resume File (Inline View)
-@app.get("/resume")
+# CHANGED: Added /api/ prefix to avoid conflict with frontend route
+@app.get("/api/resume")
 def get_resume():
     # Use absolute path relative to this file's directory
     resume_path = Path(__file__).parent / "resume.pdf"

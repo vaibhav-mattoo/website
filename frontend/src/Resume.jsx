@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 
 function Resume() {
-  // FIXED: Use relative path so it works on Oracle Cloud
-  const backendUrl = "/resume";
+  // CHANGED: Point to the new backend endpoint
+  const backendUrl = "/api/resume";
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '20px' }}>
