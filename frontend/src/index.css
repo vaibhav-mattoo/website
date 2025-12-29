@@ -333,3 +333,13 @@ body.resume-page.light-mode::after {
 .theme-toggle svg {
   display: block;
 }
+
+/* SEE ALSO links should use the same hover effect as other links */
+.see-also-link {
+  color: var(--text-color) !important;
+}
+
+.see-also-link:hover {
+  background-color: var(--text-color) !important;
+  color: var(--container-bg) !important;
+}

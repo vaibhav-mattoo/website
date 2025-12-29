@@ -101,15 +101,15 @@ function Home({ theme, accentColor, colorOptions }) {
             <div>
               <strong style={{ color: currentColor }}>SEE ALSO</strong>
               <div style={{ marginLeft: '20px', marginTop: '5px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-                <a href="https://github.com/vaibhav-mattoo" style={{ color: currentColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <a href="https://github.com/vaibhav-mattoo" className="see-also-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <GithubIcon /> github
                 </a>
                 <span style={{ color: '#666' }}>,</span>
-                <a href="https://www.linkedin.com/in/vaibhav-mattoo-58068b327/" style={{ color: currentColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <a href="https://www.linkedin.com/in/vaibhav-mattoo-58068b327/" className="see-also-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <LinkedinIcon /> linkedin
                 </a>
                 <span style={{ color: '#666' }}>,</span>
-                <a href="mailto:vmattoo2@illinois.edu" style={{ color: currentColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <a href="mailto:vmattoo2@illinois.edu" className="see-also-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <EmailIcon /> email
                 </a>
               </div>
@@ -118,16 +118,13 @@ function Home({ theme, accentColor, colorOptions }) {
         </section>
 
         <section>
-          <h2 style={{ textTransform: 'none' }}>$ ls -la</h2>
+          <h2 style={{ textTransform: 'none' }}>$ ls -a</h2>
           <ul>
             <li>
-              <span style={{marginRight:'10px'}}>$</span> 
-              {/* 2. UPDATED LINK: Uses internal Link instead of <a> */}
-              <Link to="/resume">View Resume.pdf</Link>
+              <Link to="/resume">Resume/</Link>
             </li>
             <li>
-              <span style={{marginRight:'10px'}}>$</span>
-              <Link to="/notes">Read Engineering Notes</Link>
+              <Link to="/notes">Documents/</Link>
             </li>
           </ul>
         </section>
