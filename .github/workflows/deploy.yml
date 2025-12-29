@@ -28,32 +28,30 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: Clean old files
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: 2222
-          script: sudo rm -rf /usr/share/nginx/html/*
-
-      - name: Deploy to server
+      - name: Upload build to server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          username: ${{ secrets.DEPLOY_USER }}       # opc
           key: ${{ secrets.DEPLOY_KEY }}
           port: 2222
           source: "frontend/dist/*"
-          target: "/usr/share/nginx/html"
+          target: "/home/opc/deploy-tmp"
           strip_components: 1
 
-      - name: Reload Nginx
+      - name: Move build into nginx root and reload
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          username: ${{ secrets.DEPLOY_USER }}       # opc
           key: ${{ secrets.DEPLOY_KEY }}
           port: 2222
-          script: sudo systemctl reload nginx
+          script: |
+            set -e
+            mkdir -p /home/opc/deploy-tmp
+            sudo rm -rf /usr/share/nginx/html/*
+            sudo cp -r /home/opc/deploy-tmp/* /usr/share/nginx/html/
+            sudo rm -rf /home/opc/deploy-tmp/*
+            sudo chown -R root:root /usr/share/nginx/html
+            sudo systemctl reload nginx
 
