@@ -32,75 +32,89 @@ function Home({ theme, accentColor, colorOptions }) {
     setTimeout(() => setServerStatus("Connected: 163.192.101.22 (Oracle Cloud)"), 2000)
   }, [])
 
+  // Icon components
+  const GithubIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+      <path d="M9 18c-4.51 2-5-2-7-2"></path>
+    </svg>
+  );
+
+  const LinkedinIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z"></path>
+      <rect x="2" y="9" width="4" height="12"></rect>
+      <circle cx="4" cy="4" r="2"></circle>
+    </svg>
+  );
+
+  const EmailIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+    </svg>
+  );
+
   return (
     <>
-      <header style={{ marginBottom: '60px', textAlign: 'center' }}>
-        <h1 className="glitch" data-text="vmattoo.dev">vmattoo.dev</h1>
-        
-        <p style={{ color: '#777', fontSize: '1.2rem' }}>
-          <span style={{color: currentColor}}>&gt;</span> 
-          <Typewriter text="Full Stack Engineer // Oracle Cloud Architect" delay={30} />
-          <span className="cursor"></span>
-        </p>
-        
-        <div style={{ 
-          marginTop: '20px', 
-          display: 'flex', 
-          flexWrap: 'wrap',
-          alignItems: 'center', 
-          gap: '10px', 
-          justifyContent: 'center' 
-        }}>
-          <a href="https://github.com/vaibhav-mattoo" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <span style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              whiteSpace: 'nowrap'
-            }}>[ <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
-              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
-              <path d="M9 18c-4.51 2-5-2-7-2"></path>
-            </svg> Github ]</span>
-          </a>
-          <span style={{ color: '#333' }}>—</span>
-          <a href="https://www.linkedin.com/in/vaibhav-mattoo-58068b327/" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <span style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              whiteSpace: 'nowrap'
-            }}>[ <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
-              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z"></path>
-              <rect x="2" y="9" width="4" height="12"></rect>
-              <circle cx="4" cy="4" r="2"></circle>
-            </svg> Linkedin ]</span>
-          </a>
-          <span style={{ color: '#333' }}>—</span>
-          <a href="mailto:vmattoo2@illinois.edu" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <span style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              whiteSpace: 'nowrap'
-            }}>[ <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
-              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-            </svg> Email ]</span>
-          </a>
-        </div>
-      </header>
-
       <main>
-        
-        <section>
-          <h2 style={{ textTransform: 'none' }}>$ whoami</h2>
-          <p>
-            I am a developer specializing in <code>Python</code>, <code>Go</code>, and <code>Cloud Infrastructure</code>. 
-            Currently building distributed systems on Oracle Cloud Free Tier.
-          </p>
-          <blockquote>
-            "Simplicity is the ultimate sophistication."
-          </blockquote>
+        <section style={{ marginTop: '-50px' }}>
+          <h2 style={{ textTransform: 'none', marginBottom: '15px' }}>$ man vmattoo</h2>
+          
+          <div style={{ 
+            fontFamily: 'monospace', 
+            fontSize: '0.9rem',
+            lineHeight: '1.8',
+            marginBottom: '30px',
+            maxWidth: '700px',
+            margin: '0 auto 30px auto'
+          }}>
+            <div style={{ marginBottom: '20px' }}>
+              <strong style={{ color: currentColor }}>NAME</strong>
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <h1 className="glitch" data-text="Vaibhav Mattoo" style={{ margin: 0, fontSize: '42px', display: 'inline-block', whiteSpace: 'nowrap' }}>Vaibhav Mattoo</h1>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <strong style={{ color: currentColor }}>SYNOPSIS</strong>
+              <div style={{ marginLeft: '20px', marginTop: '5px', fontSize: '1.2rem' }}>
+                <p style={{ color: '#777', margin: 0 }}>
+                  <span style={{color: currentColor}}>&gt;</span> 
+                  <Typewriter text="Blockchain Developer // Security Engineer" delay={30} />
+                  <span className="cursor"></span>
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <strong style={{ color: currentColor }}>DESCRIPTION</strong>
+              <div style={{ marginLeft: '20px', marginTop: '5px' }}>
+                I am a developer specializing in <code>Python</code>, <code>Go</code>, and <code>Cloud Infrastructure</code>. 
+                Currently building distributed systems on Oracle Cloud Free Tier.
+              </div>
+              <blockquote style={{ marginLeft: '20px', marginTop: '10px' }}>
+                "Simplicity is the ultimate sophistication."
+              </blockquote>
+            </div>
+            
+            <div>
+              <strong style={{ color: currentColor }}>SEE ALSO</strong>
+              <div style={{ marginLeft: '20px', marginTop: '5px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                <a href="https://github.com/vaibhav-mattoo" style={{ color: currentColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <GithubIcon /> github
+                </a>
+                <span style={{ color: '#666' }}>,</span>
+                <a href="https://www.linkedin.com/in/vaibhav-mattoo-58068b327/" style={{ color: currentColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <LinkedinIcon /> linkedin
+                </a>
+                <span style={{ color: '#666' }}>,</span>
+                <a href="mailto:vmattoo2@illinois.edu" style={{ color: currentColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <EmailIcon /> email
+                </a>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section>
