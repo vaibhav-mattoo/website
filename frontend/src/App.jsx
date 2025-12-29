@@ -85,7 +85,7 @@ function Home({ theme }) {
               A pure terminal-based portfolio accessible via standard SSH clients. 
               Built with Golang and BubbleTea.
             </p>
-            <pre>$ ssh vmattoo.dev -p 2222</pre>
+            <pre>$ ssh vmattoo.dev</pre>
           </div>
 
           <div style={{ marginBottom: '30px', borderLeft: '2px solid #333', paddingLeft: '15px' }}>
