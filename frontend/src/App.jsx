@@ -43,9 +43,9 @@ function Home({ theme }) {
         </p>
         
         <div style={{ marginTop: '20px' }}>
-          <a href="https://github.com/vmattoo" className="btn">[ View on GitHub ]</a>
+          <a href="https://github.com/vaibhav-mattoo" className="btn">[ View on GitHub ]</a>
           <span style={{ margin: '0 10px', color: '#333' }}>—</span>
-          <a href="mailto:contact@vmattoo.dev" className="btn">[ Email Me ]</a>
+          <a href="mailto:vmattoo2@illinois.edu" className="btn">[ Email Me ]</a>
         </div>
       </header>
 
