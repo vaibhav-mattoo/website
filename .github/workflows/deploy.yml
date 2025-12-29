@@ -3,7 +3,7 @@ name: Deploy Frontend
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,11 +18,14 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'  # ← Add this
 
       - name: Install dependencies
+        working-directory: ./frontend  # ← Add this
         run: npm ci
 
       - name: Build Vite project
+        working-directory: ./frontend  # ← Add this
         run: npm run build
 
       - name: Deploy to server
@@ -31,9 +34,9 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: "dist/"
+          source: "frontend/dist/"  # ← Changed
           target: "/home/opc/site-dist"
-          rm: true  # Remove old files first
+          rm: true
 
       - name: Clear old files and move new ones
         uses: appleboy/ssh-action@master
@@ -43,8 +46,6 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
             cd /home/opc/site-dist
-            # If you want to keep backups, uncomment: cp -r . ../site-dist-backup
-            # Remove everything and copy dist contents
             rm -rf *
             cp -r dist/* .
             rm -rf dist
