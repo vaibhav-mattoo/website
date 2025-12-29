@@ -101,4 +101,4 @@ jobs:
             ./venv/bin/pip install -r requirements.txt
             
             # Restart the systemd service to pick up code changes
-            sudo systemctl restart backend
+            sudo systemctl restart portfolio-backend
