@@ -28,30 +28,37 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: Upload build to server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}       # opc
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: 2222
-          source: "frontend/dist/*"
-          target: "/home/opc/deploy-tmp"
-          strip_components: 1
-
-      - name: Move build into nginx root and reload
+      - name: Clean old files
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}       # opc
+          username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           port: 2222
           script: |
-            set -e
-            mkdir -p /home/opc/deploy-tmp
             sudo rm -rf /usr/share/nginx/html/*
-            sudo cp -r /home/opc/deploy-tmp/* /usr/share/nginx/html/
-            sudo rm -rf /home/opc/deploy-tmp/*
+            sudo mkdir -p /usr/share/nginx/html
+            sudo chown opc:opc /usr/share/nginx/html
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          source: "frontend/dist/"        # note trailing slash, no *
+          target: "/usr/share/nginx/html" # nginx root
+          strip_components: 1             # drop the leading dist/ folder[web:26][web:37]
+
+      - name: Fix ownership and reload Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          script: |
             sudo chown -R root:root /usr/share/nginx/html
             sudo systemctl reload nginx
 
