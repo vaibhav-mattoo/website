@@ -21,7 +21,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-color);
-  color: var(--main-text-color); /* UPDATED: Uses variable now */
+  color: var(--main-text-color);
   font-family: 'Share Tech Mono', monospace;
   overflow-x: hidden;
 }
@@ -45,6 +45,11 @@ body::after {
   z-index: 999;
 }
 
+/* Disable CRT effect on resume page */
+body.resume-page::after {
+  display: none;
+}
+
 #root {
   max-width: var(--container-width);
   margin: 0 auto;
@@ -52,7 +57,7 @@ body::after {
   border-left: 1px dashed var(--border-color);
   border-right: 1px dashed var(--border-color);
   min-height: 100vh;
-  background: var(--container-bg); /* UPDATED: Uses variable now */
+  background: var(--container-bg);
   position: relative;
 }
 
@@ -210,6 +215,11 @@ body.light-mode::after {
     transparent 1px,
     transparent 2px
   );
+}
+
+/* Disable CRT effect on resume page in light mode too */
+body.resume-page.light-mode::after {
+  display: none;
 }
 
 /* Toggle Button Styling */

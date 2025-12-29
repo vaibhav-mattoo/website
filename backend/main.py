@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List
+from pathlib import Path
 
 app = FastAPI()
 
@@ -34,8 +35,12 @@ class Note(BaseModel):
 # Route 1: Serve the Resume File (Inline View)
 @app.get("/resume")
 def get_resume():
+    # Use absolute path relative to this file's directory
+    resume_path = Path(__file__).parent / "resume.pdf"
+    if not resume_path.exists():
+        raise FileNotFoundError(f"Resume file not found at {resume_path}")
     return FileResponse(
-        "resume.pdf",
+        str(resume_path),
         media_type="application/pdf",
         content_disposition_type="inline",  # <--- THIS IS KEY
     )

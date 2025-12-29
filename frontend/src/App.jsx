@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import Notes from './Notes'
 import Resume from './Resume' // <--- 1. IMPORT THIS
 
@@ -142,6 +142,7 @@ function Home({ theme }) {
 // --- MAIN APP (The Switchboard) ---
 function App() {
   const [theme, setTheme] = useState("dark");
+  const location = useLocation();
 
   useEffect(() => {
     if (theme === "light") {
@@ -150,6 +151,15 @@ function App() {
       document.body.classList.remove("light-mode");
     }
   }, [theme]);
+
+  // Add class to body when on resume page to disable CRT effect
+  useEffect(() => {
+    if (location.pathname === "/resume") {
+      document.body.classList.add("resume-page");
+    } else {
+      document.body.classList.remove("resume-page");
+    }
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === "dark" ? "light" : "dark");
