@@ -1,4 +1,4 @@
-name: Deploy Frontend
+name: Deploy Full Stack
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  # --- JOB 1: FRONTEND DEPLOYMENT ---
+  deploy-frontend:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,8 +28,7 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      # 1) Upload dist/ to a temp dir in $HOME
-      # ADDED: strip_components to remove "frontend/dist" from the path
+      # Upload dist/ to a temp dir in $HOME
       - name: Upload dist to temp directory
         uses: appleboy/scp-action@master
         with:
@@ -41,8 +40,7 @@ jobs:
           target: "/home/opc/deploy-tmp"
           strip_components: 2
 
-      # 2) As opc, use sudo to wipe nginx root and move contents from temp dir
-      # NOTE: Added a check to ensure deploy-tmp is not empty before copying to avoid errors
+      # Move files to Nginx and reload
       - name: Deploy into nginx html and reload
         uses: appleboy/ssh-action@master
         with:
@@ -52,20 +50,55 @@ jobs:
           port: 2222
           script: |
             set -e
-            
-            # Ensure temp dir exists
             mkdir -p /home/opc/deploy-tmp
-
+            
             # Clean nginx root
             sudo rm -rf /usr/share/nginx/html/*
-
-            # Copy built files into nginx root
-            # We use "." inside deploy-tmp to ensure we grab hidden files if any, and avoid issues if glob fails
+            
+            # Copy built files
             sudo cp -r /home/opc/deploy-tmp/. /usr/share/nginx/html/
-
+            
             # Clean temp dir
             rm -rf /home/opc/deploy-tmp/*
-
+            
             # Fix ownership and reload nginx
             sudo chown -R root:root /usr/share/nginx/html
             sudo systemctl reload nginx
+
+  # --- JOB 2: BACKEND DEPLOYMENT ---
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Upload backend/ folder to /home/opc/backend
+      - name: Upload backend code
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          source: "backend/*"
+          target: "/home/opc/backend"
+          strip_components: 1 # Removes "backend/" so files land directly in target
+
+      # Install Python deps and restart service
+      - name: Install requirements and restart service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          script: |
+            set -e
+            cd /home/opc/backend
+            
+            # Install dependencies inside the existing venv
+            # We use the full path to pip to ensure we use the venv
+            ./venv/bin/pip install -r requirements.txt
+            
+            # Restart the systemd service to pick up code changes
+            sudo systemctl restart backend
