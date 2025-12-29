@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import Notes from './Notes'
 import Resume from './Resume' // <--- 1. IMPORT THIS
+import CodeBlock from './CodeBlock'
 
 // --- HELPER COMPONENT: Typewriter ---
 const Typewriter = ({ text, delay = 50 }) => {
@@ -85,7 +86,7 @@ function Home({ theme }) {
               A pure terminal-based portfolio accessible via standard SSH clients. 
               Built with Golang and BubbleTea.
             </p>
-            <pre>$ ssh vmattoo.dev</pre>
+            <CodeBlock prompt="$ " code="ssh vmattoo.dev" />
           </div>
 
           <div style={{ marginBottom: '30px', borderLeft: '2px solid #333', paddingLeft: '15px' }}>
