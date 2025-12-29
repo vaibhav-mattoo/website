@@ -28,6 +28,15 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      - name: Clean old files
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          script: sudo rm -rf /usr/share/nginx/html/*
+
       - name: Deploy to server
         uses: appleboy/scp-action@master
         with:
@@ -35,20 +44,16 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           port: 2222
-          source: "frontend/dist/"
-          target: "/home/opc/site-dist"
-          rm: true
+          source: "frontend/dist/*"
+          target: "/usr/share/nginx/html"
+          strip_components: 1
 
-      - name: Clear old files and move new ones
+      - name: Reload Nginx
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           port: 2222
-          script: |
-            cd /home/opc/site-dist
-            rm -rf *
-            cp -r dist/* .
-            rm -rf dist
+          script: sudo systemctl reload nginx
 
