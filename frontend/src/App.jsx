@@ -215,8 +215,11 @@ function App() {
     const colorValue = theme === "dark" 
       ? colorOptions[accentColor].dark 
       : colorOptions[accentColor].light;
+    // Set on document root for dark mode
     document.documentElement.style.setProperty('--text-color', colorValue);
-  }, [theme, accentColor]);
+    // Also set on body for light mode override
+    document.body.style.setProperty('--text-color', colorValue);
+  }, [theme, accentColor, colorOptions]);
 
   // Add class to body when on resume page to disable CRT effect
   useEffect(() => {
