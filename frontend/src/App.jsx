@@ -412,7 +412,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home theme={theme} accentColor={accentColor} colorOptions={colorOptions} />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/about" element={<About theme={theme} accentColor={accentColor} colorOptions={colorOptions} />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/experience" element={<Experience />} />
         <Route path="/trace" element={<Trace />} />

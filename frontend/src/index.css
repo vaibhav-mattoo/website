@@ -343,3 +343,30 @@ body.resume-page.light-mode::after {
   background-color: var(--text-color) !important;
   color: var(--container-bg) !important;
 }
+
+/* Scrollbar Styling - Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--container-bg);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 6px;
+  border: 2px solid var(--container-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dim-color);
+}
+
+/* Scrollbar Styling - Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--container-bg);
+}
