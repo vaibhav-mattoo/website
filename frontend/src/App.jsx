@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import Notes from './Notes'
-import Resume from './Resume' // <--- 1. IMPORT THIS
+import Resume from './Resume'
+import About from './About'
+import Projects from './Projects'
+import Experience from './Experience'
+import Trace from './Trace'
+import Publications from './Publications'
 import CodeBlock from './CodeBlock'
 
 // --- HELPER COMPONENT: Typewriter ---
@@ -121,16 +126,64 @@ function Home({ theme, accentColor, colorOptions }) {
           <h2 style={{ textTransform: 'none' }}>$ ls -a</h2>
           <ul>
             <li>
+              <Link to="/about">About/</Link>
+            </li>
+            <li>
               <Link to="/resume">Resume/</Link>
             </li>
             <li>
-              <Link to="/notes">Documents/</Link>
+              <Link to="/experience">Experience/</Link>
+            </li>
+            <li>
+              <Link to="/publications">Publications/</Link>
+            </li>
+            <li>
+              <Link to="/projects">Projects/</Link>
+            </li>
+            <li>
+              <Link to="/trace">Trace/</Link>
             </li>
           </ul>
         </section>
 
         <section>
-          <h2 style={{ textTransform: 'none' }}>$ cat projects.md</h2>
+          <h2 style={{ textTransform: 'none' }}>$ cat About/<span style={{ borderBottom: `2px solid ${currentColor}` }}>Education</span>.md</h2>
+          
+          <div style={{ marginTop: '20px', lineHeight: '1.8' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: currentColor }}>Degree Name</h3>
+              <p style={{ color: 'var(--dim-color)', fontSize: '0.9rem', marginTop: '5px' }}>Institution Name | Date Range</p>
+              <p style={{ marginTop: '10px' }}>Description of education or achievements...</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 style={{ textTransform: 'none' }}>$ cat <span style={{ borderBottom: `2px solid ${currentColor}` }}>Experience</span>/README.md</h2>
+          
+          <div style={{ marginBottom: '30px', borderLeft: '2px solid #333', paddingLeft: '15px' }}>
+            <h3><a href="#">SSH Portfolio (TUI)</a></h3>
+            <p>
+              A pure terminal-based portfolio accessible via standard SSH clients. 
+              Built with Golang and BubbleTea.
+            </p>
+            <CodeBlock prompt="$ " code="ssh vmattoo.dev" />
+          </div>
+
+          <div style={{ marginBottom: '30px', borderLeft: '2px solid #333', paddingLeft: '15px' }}>
+            <h3><a href="#">Smart Voice Assistant</a></h3>
+            <p>
+              Privacy-focused voice assistant using Split-LLM architecture.
+              Runs locally on edge devices.
+            </p>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+              [Status: In Development]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 style={{ textTransform: 'none' }}>$ cat <span style={{ borderBottom: `2px solid ${currentColor}` }}>Projects</span>/README.md</h2>
           
           <div style={{ marginBottom: '30px', borderLeft: '2px solid #333', paddingLeft: '15px' }}>
             <h3><a href="#">SSH Portfolio (TUI)</a></h3>
@@ -359,8 +412,12 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home theme={theme} accentColor={accentColor} colorOptions={colorOptions} />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/experience" element={<Experience />} />
+        <Route path="/trace" element={<Trace />} />
+        <Route path="/publications" element={<Publications />} />
         <Route path="/notes" element={<Notes />} />
-        {/* 3. NEW ROUTE */}
         <Route path="/resume" element={<Resume />} />
       </Routes>
     </>

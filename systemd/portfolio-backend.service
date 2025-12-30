@@ -1,0 +1,21 @@
+[Unit]
+Description=Portfolio FastAPI Backend
+After=network.target
+
+[Service]
+# The user that runs the app
+User=opc
+Group=opc
+
+# The directory where main.py is located (Crucial for finding resume.pdf)
+WorkingDirectory=/home/opc/backend
+
+# The command to start the server
+# REPLACE '/home/opc/venv/bin/uvicorn' with the output of 'which uvicorn'
+ExecStart=/home/opc/backend/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Restart automatically if it crashes
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

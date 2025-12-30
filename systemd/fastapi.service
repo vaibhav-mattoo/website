@@ -1,0 +1,13 @@
+[Unit]
+Description=FastAPI Backend
+After=network.target
+
+[Service]
+User=opc
+WorkingDirectory=/home/opc/backend
+# Command to run uvicorn using the venv
+ExecStart=/home/opc/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
