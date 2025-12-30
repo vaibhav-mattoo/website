@@ -8,7 +8,7 @@ function Resume() {
     <div style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '20px' }}>
       
       {/* The Command Header */}
-      <h2>$ zathura resume.pdf --mode=embedded</h2>
+      <h2>$ zathura Resume.pdf</h2>
       
       {/* The PDF Container */}
       <div style={{ 
