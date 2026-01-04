@@ -1,28 +1,21 @@
 import { Link } from 'react-router-dom';
+import TraceInfo from './components/TraceInfo';
 
-function Trace() {
+function Trace({ theme, accentColor, colorOptions }) {
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '20px' }}>
-      <h2>$ trace</h2>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '20px' }}>
+      <h2 style={{ textTransform: 'none' }}>$ trace</h2>
       
-      <div style={{ marginTop: '20px', lineHeight: '1.8' }}>
+      <div style={{ marginTop: '20px', marginBottom: '30px', lineHeight: '1.8' }}>
         <p>
-          Tracing the path of my journey through code, systems, and innovation.
+          Tracing your digital fingerprint across the web. This page demonstrates what information
+          websites can collect about you and your device.
         </p>
-        <pre style={{ 
-          background: '#1a1a1a', 
-          border: '1px solid var(--border-color)', 
-          padding: '15px',
-          overflowX: 'auto'
-        }}>
-          {`[Trace] Initializing...
-[Trace] Loading experiences...
-[Trace] Processing projects...
-[Trace] Ready.`}
-        </pre>
       </div>
+
+      <TraceInfo theme={theme} accentColor={accentColor} colorOptions={colorOptions} />
       
-      <div style={{ marginTop: '20px' }}>
+      <div style={{ marginTop: '40px' }}>
         <Link to="/" style={{ display: 'inline-block' }}>
           &lt; cd .. (Back to Home)
         </Link>
@@ -32,6 +25,7 @@ function Trace() {
 }
 
 export default Trace;
+
 
 
 

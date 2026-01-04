@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from pathlib import Path
+import geoip2.database
+import geoip2.errors
 
 app = FastAPI()
 
@@ -73,3 +75,100 @@ def get_notes():
             "content": "Why component-based state management wins for dashboards...",
         },
     ]
+
+
+# Initialize GeoLite2 database reader
+DB_PATH = Path(__file__).parent / "data" / "GeoLite2-City.mmdb"
+geoip_reader = None
+
+def get_geoip_reader():
+    """Lazy load the GeoIP database reader"""
+    global geoip_reader
+    if geoip_reader is None and DB_PATH.exists():
+        try:
+            geoip_reader = geoip2.database.Reader(str(DB_PATH))
+        except Exception as e:
+            print(f"Failed to load GeoLite2 database: {e}")
+    return geoip_reader
+
+def is_private_ip(ip: str) -> bool:
+    """Check if an IP is private/localhost"""
+    if ip in ['127.0.0.1', 'localhost', 'unknown']:
+        return True
+    if ip.startswith('10.') or ip.startswith('192.168.'):
+        return True
+    if ip.startswith('172.'):
+        try:
+            parts = ip.split('.')
+            if len(parts) >= 2:
+                second_octet = int(parts[1])
+                if 16 <= second_octet <= 31:
+                    return True
+        except (ValueError, IndexError):
+            pass
+    if ip.startswith('169.254.'):
+        return True
+    if ip in ['::1', '::ffff:127.0.0.1']:
+        return True
+    return False
+
+# Route 3: Get Geolocation from IP using local GeoLite2 database
+@app.get("/api/geolocation")
+def get_geolocation(request: Request):
+    """
+    Get geolocation information from the client's IP address.
+    Uses local MaxMind GeoLite2 database - no rate limits!
+    """
+    # Get client IP from request
+    client_ip = request.client.host
+    
+    # Check for forwarded IP (in case behind proxy/load balancer)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    
+    # Skip private IPs
+    if is_private_ip(client_ip):
+        return {
+            "ip": client_ip,
+            "geo": None
+        }
+    
+    # Use local GeoLite2 database
+    reader = get_geoip_reader()
+    if not reader:
+        return {
+            "ip": client_ip,
+            "geo": None
+        }
+    
+    try:
+        response = reader.city(client_ip)
+        
+        return {
+            "ip": client_ip,
+            "geo": {
+                "lat": response.location.latitude if response.location.latitude else None,
+                "lng": response.location.longitude if response.location.longitude else None,
+                "city": response.city.names.get('en', 'Unknown') if response.city else 'Unknown',
+                "region": response.subdivisions[0].names.get('en', 'Unknown') if response.subdivisions else 'Unknown',
+                "country": response.country.names.get('en', 'Unknown') if response.country else 'Unknown',
+                "countryCode": response.country.iso_code if response.country else 'XX',
+                "timezone": response.location.time_zone if response.location.time_zone else 'UTC',
+                "isp": response.traits.isp or response.traits.organization or 'Unknown' if response.traits else 'Unknown',
+                "org": response.traits.organization or 'Unknown' if response.traits else 'Unknown',
+            }
+        }
+    except geoip2.errors.AddressNotFoundError:
+        # IP not found in database
+        return {
+            "ip": client_ip,
+            "geo": None
+        }
+    except Exception as e:
+        # Other errors
+        print(f"Geolocation lookup error: {e}")
+        return {
+            "ip": client_ip,
+            "geo": None
+        }

@@ -204,7 +204,7 @@ function About({ theme, accentColor, colorOptions }) {
           colorOptions={colorOptions}
         />
         <p style={{ fontSize: '0.8rem', color: 'var(--dim-color)', marginTop: '10px', textAlign: 'center' }}>
-          View my contributions on <a href="https://github.com/vaibhav-mattoo" style={{ color: 'var(--text-color)' }}>GitHub</a>
+          View my contributions on <a href="https://github.com/vaibhav-mattoo" className="see-also-link">GitHub</a>
         </p>
       </div>
       

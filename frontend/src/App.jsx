@@ -415,7 +415,7 @@ function App() {
         <Route path="/about" element={<About theme={theme} accentColor={accentColor} colorOptions={colorOptions} />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/experience" element={<Experience />} />
-        <Route path="/trace" element={<Trace />} />
+            <Route path="/trace" element={<Trace theme={theme} accentColor={accentColor} colorOptions={colorOptions} />} />
         <Route path="/publications" element={<Publications />} />
         <Route path="/notes" element={<Notes />} />
         <Route path="/resume" element={<Resume />} />
