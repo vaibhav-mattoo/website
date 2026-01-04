@@ -186,6 +186,58 @@ def get_geoip_reader():
     
     return geoip_reader
 
+def get_geoip_error_details():
+    """Get detailed error information about GeoIP database loading"""
+    global DB_PATH
+    
+    error_details = {
+        "database_found": False,
+        "database_path": None,
+        "database_size_mb": None,
+        "searched_paths": [],
+        "error_message": None,
+        "script_directory": str(Path(__file__).parent.resolve()),
+        "working_directory": str(Path.cwd()),
+    }
+    
+    # Get searched paths
+    script_dir = Path(__file__).parent.resolve()
+    possible_paths = [
+        script_dir / "data" / "GeoLite2-City.mmdb",
+        Path.cwd() / "data" / "GeoLite2-City.mmdb",
+        Path.cwd() / "backend" / "data" / "GeoLite2-City.mmdb",
+        Path("/home/opc/backend/data/GeoLite2-City.mmdb"),
+        Path("/home/fuckotheclown/Public/socials/website/yourinfo/data/GeoLite2-City.mmdb"),
+        Path("/home/fuckotheclown/Public/socials/website/backend/data/GeoLite2-City.mmdb"),
+    ]
+    
+    error_details["searched_paths"] = [str(p) for p in possible_paths]
+    
+    # Check if database exists
+    if DB_PATH is None:
+        DB_PATH = find_geolite2_database()
+    
+    if DB_PATH and DB_PATH.exists():
+        error_details["database_found"] = True
+        error_details["database_path"] = str(DB_PATH)
+        try:
+            error_details["database_size_mb"] = round(DB_PATH.stat().st_size / (1024 * 1024), 2)
+        except:
+            pass
+        
+        # Try to load it to see if there are any errors
+        try:
+            test_reader = geoip2.database.Reader(str(DB_PATH))
+            test_reader.close()
+        except Exception as e:
+            error_details["error_message"] = f"Database file exists but failed to load: {str(e)}"
+    else:
+        error_details["error_message"] = "Database file not found in any searched location"
+        if DB_PATH:
+            error_details["database_path"] = str(DB_PATH)
+    
+    return error_details
+
 # Initialize geopy geocoder
 geolocator = None
 
@@ -365,18 +417,15 @@ async def get_geolocation(request: Request):
     # Use local GeoLite2 database
     reader = get_geoip_reader()
     if not reader:
-        error_msg = f"GeoLite2 database reader not available for IP: {client_ip}"
-        if DB_PATH:
-            error_msg += f" (searched for database, found at: {DB_PATH} but failed to load)"
-        else:
-            error_msg += " (database file not found)"
-        print(error_msg)
+        # Get detailed error information
+        error_details = get_geoip_error_details()
         return {
             "ip": client_ip,
             "geo": None,
             "visit_count": visitor_info["visit_count"],
             "referer": visitor_info["last_referer"],
-            "error": "GeoLite2 database not loaded - check server logs for details"
+            "error": "GeoLite2 database not loaded",
+            "error_details": error_details
         }
     
     try:

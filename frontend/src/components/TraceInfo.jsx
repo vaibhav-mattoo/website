@@ -185,10 +185,66 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
               </>
             )}
             {!geoInfo.geo && (
-              <div style={{ color: 'var(--dim-color)', fontStyle: 'italic' }}>
-                {geoInfo.error 
-                  ? `Location data unavailable: ${geoInfo.error}`
-                  : 'Location data unavailable (private IP or database lookup failed)'}
+              <div style={{ 
+                marginTop: '15px', 
+                padding: '15px', 
+                background: theme === 'dark' ? '#1a0a0a' : '#ffe6e6',
+                border: '1px solid #ff6b6b',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '0.85rem'
+              }}>
+                <div style={{ color: '#ff6b6b', fontWeight: 'bold', marginBottom: '10px' }}>
+                  ⚠ Location Data Unavailable
+                </div>
+                {geoInfo.error && (
+                  <div style={{ color: 'var(--main-text-color)', marginBottom: '10px' }}>
+                    <strong>Error:</strong> {geoInfo.error}
+                  </div>
+                )}
+                {geoInfo.error_details && (
+                  <div style={{ color: 'var(--main-text-color)' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <strong>Database Status:</strong> {geoInfo.error_details.database_found ? '✅ Found' : '❌ Not Found'}
+                    </div>
+                    {geoInfo.error_details.database_path && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <strong>Database Path:</strong> {geoInfo.error_details.database_path}
+                        {geoInfo.error_details.database_size_mb && (
+                          <span> ({geoInfo.error_details.database_size_mb} MB)</span>
+                        )}
+                      </div>
+                    )}
+                    {geoInfo.error_details.error_message && (
+                      <div style={{ marginBottom: '10px', color: '#ff6b6b' }}>
+                        <strong>Details:</strong> {geoInfo.error_details.error_message}
+                      </div>
+                    )}
+                    <div style={{ marginBottom: '10px' }}>
+                      <strong>Script Directory:</strong> {geoInfo.error_details.script_directory}
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <strong>Working Directory:</strong> {geoInfo.error_details.working_directory}
+                    </div>
+                    {geoInfo.error_details.searched_paths && geoInfo.error_details.searched_paths.length > 0 && (
+                      <div style={{ marginTop: '10px' }}>
+                        <strong>Searched Paths:</strong>
+                        <ul style={{ marginTop: '5px', marginLeft: '20px', listStyle: 'disc' }}>
+                          {geoInfo.error_details.searched_paths.map((path, idx) => (
+                            <li key={idx} style={{ marginBottom: '3px', color: 'var(--dim-color)', fontSize: '0.8rem' }}>
+                              {path}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!geoInfo.error_details && (
+                  <div style={{ color: 'var(--dim-color)', fontStyle: 'italic' }}>
+                    Private IP or database lookup failed
+                  </div>
+                )}
               </div>
             )}
             {geoInfo.visit_count !== undefined && (
