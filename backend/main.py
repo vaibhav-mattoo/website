@@ -8,8 +8,49 @@ import geoip2.database
 import geoip2.errors
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+import aiosqlite
+import asyncio
+from datetime import datetime
 
 app = FastAPI()
+
+# Database path
+DB_PATH = Path(__file__).parent / "visitors.db"
+
+# Initialize database on startup
+@app.on_event("startup")
+async def init_db():
+    """Initialize the visitors database"""
+    try:
+        # Check if file exists and is corrupted, delete it if so
+        if DB_PATH.exists():
+            try:
+                # Try to open and verify it's a valid database using sync sqlite3 first
+                import sqlite3
+                conn = sqlite3.connect(str(DB_PATH))
+                conn.execute("SELECT 1")
+                conn.close()
+            except (sqlite3.DatabaseError, sqlite3.OperationalError) as e:
+                # File exists but is corrupted, delete it
+                print(f"Corrupted database file detected ({e}), removing: {DB_PATH}")
+                DB_PATH.unlink()
+        
+        # Create or connect to database
+        async with aiosqlite.connect(str(DB_PATH)) as db:
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS visitors (
+                    ip TEXT PRIMARY KEY,
+                    visit_count INTEGER DEFAULT 1,
+                    first_visit TEXT,
+                    last_visit TEXT,
+                    last_referer TEXT
+                )
+            """)
+            await db.commit()
+            print(f"Database initialized successfully: {DB_PATH}")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        # If database initialization fails, the app will still run but tracking won't work
 
 # --- IMPORTANT: CORS SETUP ---
 # This allows your React app (running on localhost:5173)
@@ -146,6 +187,74 @@ def reverse_geocode(lat: float, lng: float) -> Optional[str]:
     
     return None
 
+async def track_visitor(ip: str, referer: Optional[str] = None):
+    """Track visitor by IP address"""
+    try:
+        async with aiosqlite.connect(str(DB_PATH)) as db:
+            # Check if visitor exists
+            cursor = await db.execute(
+                "SELECT visit_count, first_visit FROM visitors WHERE ip = ?",
+                (ip,)
+            )
+            row = await cursor.fetchone()
+            
+            now = datetime.utcnow().isoformat()
+            
+            if row:
+                # Update existing visitor
+                visit_count = row[0] + 1
+                await db.execute(
+                    """UPDATE visitors 
+                       SET visit_count = ?, last_visit = ?, last_referer = ?
+                       WHERE ip = ?""",
+                    (visit_count, now, referer or '', ip)
+                )
+            else:
+                # Insert new visitor
+                await db.execute(
+                    """INSERT INTO visitors (ip, visit_count, first_visit, last_visit, last_referer)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (ip, 1, now, now, referer or '')
+                )
+            
+            await db.commit()
+            
+            # Get updated visit count
+            cursor = await db.execute(
+                "SELECT visit_count FROM visitors WHERE ip = ?",
+                (ip,)
+            )
+            row = await cursor.fetchone()
+            return row[0] if row else 1
+    except Exception as e:
+        print(f"Error tracking visitor: {e}")
+        return 1
+
+async def get_visitor_info(ip: str):
+    """Get visitor information from database"""
+    try:
+        async with aiosqlite.connect(str(DB_PATH)) as db:
+            cursor = await db.execute(
+                "SELECT visit_count, last_referer FROM visitors WHERE ip = ?",
+                (ip,)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return {
+                    "visit_count": row[0],
+                    "last_referer": row[1] or None
+                }
+            return {
+                "visit_count": 0,
+                "last_referer": None
+            }
+    except Exception as e:
+        print(f"Error getting visitor info: {e}")
+        return {
+            "visit_count": 0,
+            "last_referer": None
+        }
+
 def is_private_ip(ip: str) -> bool:
     """Check if an IP is private/localhost"""
     if ip in ['127.0.0.1', 'localhost', 'unknown']:
@@ -169,10 +278,11 @@ def is_private_ip(ip: str) -> bool:
 
 # Route 3: Get Geolocation from IP using local GeoLite2 database
 @app.get("/api/geolocation")
-def get_geolocation(request: Request):
+async def get_geolocation(request: Request):
     """
     Get geolocation information from the client's IP address.
     Uses local MaxMind GeoLite2 database - no rate limits!
+    Also tracks visitor visits and referer.
     """
     # Get client IP from request
     client_ip = request.client.host
@@ -182,11 +292,22 @@ def get_geolocation(request: Request):
     if forwarded_for:
         client_ip = forwarded_for.split(",")[0].strip()
     
-    # Skip private IPs
+    # Get referer from request
+    referer = request.headers.get("Referer") or request.headers.get("Referrer")
+    
+    # Track visitor (even if private IP, we still track it)
+    visit_count = await track_visitor(client_ip, referer)
+    
+    # Get visitor info
+    visitor_info = await get_visitor_info(client_ip)
+    
+    # Skip private IPs for geolocation
     if is_private_ip(client_ip):
         return {
             "ip": client_ip,
-            "geo": None
+            "geo": None,
+            "visit_count": visitor_info["visit_count"],
+            "referer": visitor_info["last_referer"]
         }
     
     # Use local GeoLite2 database
@@ -221,18 +342,24 @@ def get_geolocation(request: Request):
                 "isp": response.traits.isp or response.traits.organization or 'Unknown' if response.traits else 'Unknown',
                 "org": response.traits.organization or 'Unknown' if response.traits else 'Unknown',
                 "streetLocation": street_location,  # Approximate street location from reverse geocoding
-            }
+            },
+            "visit_count": visitor_info["visit_count"],
+            "referer": visitor_info["last_referer"]
         }
     except geoip2.errors.AddressNotFoundError:
         # IP not found in database
         return {
             "ip": client_ip,
-            "geo": None
+            "geo": None,
+            "visit_count": visitor_info["visit_count"],
+            "referer": visitor_info["last_referer"]
         }
     except Exception as e:
         # Other errors
         print(f"Geolocation lookup error: {e}")
         return {
             "ip": client_ip,
-            "geo": None
+            "geo": None,
+            "visit_count": visitor_info["visit_count"],
+            "referer": visitor_info["last_referer"]
         }

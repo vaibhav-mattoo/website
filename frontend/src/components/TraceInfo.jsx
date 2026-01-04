@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collectClientInfo } from '../utils/fingerprint';
+import { useFingerprint } from '../contexts/FingerprintContext';
 
 function TraceInfo({ theme, accentColor, colorOptions }) {
+  const { fingerprintData, fingerprintLoading } = useFingerprint();
   const [clientInfo, setClientInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [geoInfo, setGeoInfo] = useState(null);
@@ -12,41 +13,43 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
 
   useEffect(() => {
     async function loadInfo() {
-      try {
-        console.log('Starting fingerprint collection...');
-        // Collect client-side info
-        const info = await collectClientInfo();
-        console.log('Fingerprint collection complete:', info);
-        setClientInfo(info);
-
-        // Try to get geolocation from backend
-        try {
-          console.log('Fetching geolocation...');
-          const response = await fetch('/api/geolocation');
-          console.log('Geolocation response status:', response.status);
-          if (response.ok) {
-            const geo = await response.json();
-            console.log('Geolocation data:', geo);
-            setGeoInfo(geo);
-          } else {
-            console.warn('Geolocation API returned error:', response.status);
-          }
-        } catch (err) {
-          console.warn('Geolocation API not available:', err);
-        }
-
+      // Use fingerprint data from context (collected on page load)
+      if (fingerprintData) {
+        console.log('Using fingerprint data from context');
+        setClientInfo(fingerprintData);
+      } else if (!fingerprintLoading) {
+        // If fingerprint collection failed, show error
+        console.warn('Fingerprint data not available');
         setLoading(false);
-      } catch (err) {
-        console.error('Failed to collect client info:', err);
-        console.error('Error stack:', err.stack);
-        setLoading(false);
+        return;
+      } else {
+        // Still loading fingerprint
+        return;
       }
+
+      // Try to get geolocation from backend
+      try {
+        console.log('Fetching geolocation...');
+        const response = await fetch('/api/geolocation');
+        console.log('Geolocation response status:', response.status);
+        if (response.ok) {
+          const geo = await response.json();
+          console.log('Geolocation data:', geo);
+          setGeoInfo(geo);
+        } else {
+          console.warn('Geolocation API returned error:', response.status);
+        }
+      } catch (err) {
+        console.warn('Geolocation API not available:', err);
+      }
+
+      setLoading(false);
     }
 
     loadInfo();
-  }, []);
+  }, [fingerprintData, fingerprintLoading]);
 
-  if (loading) {
+  if (loading || fingerprintLoading || !clientInfo) {
     return (
       <div style={{
         fontFamily: 'monospace',
@@ -57,7 +60,7 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
         background: theme === 'dark' ? '#0d0d0d' : '#f9f9f9',
         borderRadius: '4px'
       }}>
-        <span style={{ color: currentColor }}>$</span> Collecting fingerprint data...
+        <span style={{ color: currentColor }}>$</span> {fingerprintLoading ? 'Collecting fingerprint data...' : 'Loading trace information...'}
       </div>
     );
   }
@@ -184,6 +187,24 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
             {!geoInfo.geo && (
               <div style={{ color: 'var(--dim-color)', fontStyle: 'italic' }}>
                 Location data unavailable (private IP or database lookup failed)
+              </div>
+            )}
+            {geoInfo.visit_count !== undefined && (
+              <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <span style={{ color: currentColor }}>Visit Count:</span>
+                  <span style={{ marginLeft: '15px' }}>
+                    {geoInfo.visit_count} {geoInfo.visit_count === 1 ? 'time' : 'times'}
+                  </span>
+                </div>
+                {geoInfo.referer && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: currentColor }}>Referer:</span>
+                    <span style={{ marginLeft: '15px' }}>
+                      {geoInfo.referer === 'Direct' || !geoInfo.referer ? 'Direct (no referer)' : geoInfo.referer}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>

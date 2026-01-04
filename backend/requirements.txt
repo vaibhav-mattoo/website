@@ -5,3 +5,4 @@ httpx
 geoip2
 maxminddb
 geopy
+aiosqlite
