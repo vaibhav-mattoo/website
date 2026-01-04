@@ -14,8 +14,8 @@ from datetime import datetime
 
 app = FastAPI()
 
-# Database path
-DB_PATH = Path(__file__).parent / "visitors.db"
+# Visitors database path (SQLite)
+VISITORS_DB_PATH = Path(__file__).parent / "visitors.db"
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -23,20 +23,24 @@ async def init_db():
     """Initialize the visitors database"""
     try:
         # Check if file exists and is corrupted, delete it if so
-        if DB_PATH.exists():
+        if VISITORS_DB_PATH.exists():
             try:
                 # Try to open and verify it's a valid database using sync sqlite3 first
                 import sqlite3
-                conn = sqlite3.connect(str(DB_PATH))
+                conn = sqlite3.connect(str(VISITORS_DB_PATH))
                 conn.execute("SELECT 1")
                 conn.close()
             except (sqlite3.DatabaseError, sqlite3.OperationalError) as e:
                 # File exists but is corrupted, delete it
-                print(f"Corrupted database file detected ({e}), removing: {DB_PATH}")
-                DB_PATH.unlink()
+                print(f"Corrupted visitors database file detected ({e}), removing: {VISITORS_DB_PATH}")
+                VISITORS_DB_PATH.unlink()
         
         # Create or connect to database
-        async with aiosqlite.connect(str(DB_PATH)) as db:
+        async with aiosqlite.connect(str(VISITORS_DB_PATH)) as db:
+            # Enable WAL mode for better concurrency and durability
+            await db.execute("PRAGMA journal_mode=WAL")
+            await db.execute("PRAGMA synchronous=NORMAL")
+            
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS visitors (
                     ip TEXT PRIMARY KEY,
@@ -47,10 +51,36 @@ async def init_db():
                 )
             """)
             await db.commit()
-            print(f"Database initialized successfully: {DB_PATH}")
+            print(f"Visitors database initialized successfully: {VISITORS_DB_PATH}")
+            
+            # Test that we can read from it
+            cursor = await db.execute("SELECT COUNT(*) FROM visitors")
+            count = await cursor.fetchone()
+            print(f"Current visitors in database: {count[0]}")
+            
+            # Verify database file exists and is writable
+            if VISITORS_DB_PATH.exists():
+                file_size = VISITORS_DB_PATH.stat().st_size
+                print(f"Visitors database file size: {file_size} bytes")
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        print(f"Error initializing visitors database: {e}")
+        import traceback
+        traceback.print_exc()
         # If database initialization fails, the app will still run but tracking won't work
+
+@app.on_event("shutdown")
+async def shutdown_db():
+    """Ensure database is properly closed on shutdown"""
+    try:
+        # Force a checkpoint on all connections before shutdown
+        import sqlite3
+        if VISITORS_DB_PATH.exists():
+            conn = sqlite3.connect(str(VISITORS_DB_PATH))
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            conn.close()
+            print("Visitors database checkpointed on shutdown")
+    except Exception as e:
+        print(f"Error during database shutdown: {e}")
 
 # --- IMPORTANT: CORS SETUP ---
 # This allows your React app (running on localhost:5173)
@@ -309,9 +339,15 @@ def reverse_geocode(lat: float, lng: float) -> Optional[str]:
     return None
 
 async def track_visitor(ip: str, referer: Optional[str] = None):
-    """Track visitor by IP address"""
+    """Track visitor by IP address - persists to disk"""
     try:
-        async with aiosqlite.connect(str(DB_PATH)) as db:
+        # Use aiosqlite with explicit connection management to ensure writes are flushed
+        db = await aiosqlite.connect(str(VISITORS_DB_PATH))
+        try:
+            # Enable WAL mode for better concurrency and ensure writes are durable
+            await db.execute("PRAGMA journal_mode=WAL")
+            await db.execute("PRAGMA synchronous=NORMAL")  # Balance between safety and speed
+            
             # Check if visitor exists
             cursor = await db.execute(
                 "SELECT visit_count, first_visit FROM visitors WHERE ip = ?",
@@ -338,6 +374,7 @@ async def track_visitor(ip: str, referer: Optional[str] = None):
                     (ip, 1, now, now, referer or '')
                 )
             
+            # Commit and ensure it's written to disk
             await db.commit()
             
             # Get updated visit count
@@ -346,15 +383,27 @@ async def track_visitor(ip: str, referer: Optional[str] = None):
                 (ip,)
             )
             row = await cursor.fetchone()
-            return row[0] if row else 1
+            visit_count = row[0] if row else 1
+            
+            # Force a checkpoint periodically (every 10th visit) to ensure WAL is written to main database
+            # This balances performance with durability
+            if visit_count % 10 == 0:
+                await db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            
+            return visit_count
+        finally:
+            await db.close()
     except Exception as e:
         print(f"Error tracking visitor: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 async def get_visitor_info(ip: str):
     """Get visitor information from database"""
     try:
-        async with aiosqlite.connect(str(DB_PATH)) as db:
+        db = await aiosqlite.connect(str(VISITORS_DB_PATH))
+        try:
             cursor = await db.execute(
                 "SELECT visit_count, last_referer FROM visitors WHERE ip = ?",
                 (ip,)
@@ -369,8 +418,12 @@ async def get_visitor_info(ip: str):
                 "visit_count": 0,
                 "last_referer": None
             }
+        finally:
+            await db.close()
     except Exception as e:
         print(f"Error getting visitor info: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "visit_count": 0,
             "last_referer": None
