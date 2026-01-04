@@ -127,11 +127,18 @@ geoip_reader = None
 def get_geoip_reader():
     """Lazy load the GeoIP database reader"""
     global geoip_reader
-    if geoip_reader is None and DB_PATH.exists():
-        try:
-            geoip_reader = geoip2.database.Reader(str(DB_PATH))
-        except Exception as e:
-            print(f"Failed to load GeoLite2 database: {e}")
+    if geoip_reader is None:
+        db_file = Path(__file__).parent / "data" / "GeoLite2-City.mmdb"
+        if db_file.exists():
+            try:
+                geoip_reader = geoip2.database.Reader(str(db_file))
+                print(f"GeoLite2 database loaded successfully from: {db_file}")
+            except Exception as e:
+                print(f"Failed to load GeoLite2 database from {db_file}: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"GeoLite2 database file not found at: {db_file}")
     return geoip_reader
 
 # Initialize geopy geocoder
@@ -313,9 +320,13 @@ async def get_geolocation(request: Request):
     # Use local GeoLite2 database
     reader = get_geoip_reader()
     if not reader:
+        print(f"GeoLite2 database reader not available for IP: {client_ip}")
         return {
             "ip": client_ip,
-            "geo": None
+            "geo": None,
+            "visit_count": visitor_info["visit_count"],
+            "referer": visitor_info["last_referer"],
+            "error": "GeoLite2 database not loaded"
         }
     
     try:
@@ -327,7 +338,11 @@ async def get_geolocation(request: Request):
         # Reverse geocode to get approximate street location
         street_location = None
         if lat and lng:
-            street_location = reverse_geocode(lat, lng)
+            try:
+                street_location = reverse_geocode(lat, lng)
+            except Exception as e:
+                print(f"Reverse geocoding error: {e}")
+                street_location = None
         
         return {
             "ip": client_ip,
@@ -346,20 +361,25 @@ async def get_geolocation(request: Request):
             "visit_count": visitor_info["visit_count"],
             "referer": visitor_info["last_referer"]
         }
-    except geoip2.errors.AddressNotFoundError:
+    except geoip2.errors.AddressNotFoundError as e:
         # IP not found in database
+        print(f"IP not found in GeoLite2 database: {client_ip} - {e}")
         return {
             "ip": client_ip,
             "geo": None,
             "visit_count": visitor_info["visit_count"],
-            "referer": visitor_info["last_referer"]
+            "referer": visitor_info["last_referer"],
+            "error": "IP not found in database"
         }
     except Exception as e:
         # Other errors
-        print(f"Geolocation lookup error: {e}")
+        print(f"Geolocation lookup error for IP {client_ip}: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "ip": client_ip,
             "geo": None,
             "visit_count": visitor_info["visit_count"],
-            "referer": visitor_info["last_referer"]
+            "referer": visitor_info["last_referer"],
+            "error": str(e)
         }

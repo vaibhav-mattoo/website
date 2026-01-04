@@ -186,7 +186,9 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
             )}
             {!geoInfo.geo && (
               <div style={{ color: 'var(--dim-color)', fontStyle: 'italic' }}>
-                Location data unavailable (private IP or database lookup failed)
+                {geoInfo.error 
+                  ? `Location data unavailable: ${geoInfo.error}`
+                  : 'Location data unavailable (private IP or database lookup failed)'}
               </div>
             )}
             {geoInfo.visit_count !== undefined && (
