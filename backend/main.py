@@ -6,6 +6,8 @@ from typing import List, Optional
 from pathlib import Path
 import geoip2.database
 import geoip2.errors
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 app = FastAPI()
 
@@ -91,6 +93,59 @@ def get_geoip_reader():
             print(f"Failed to load GeoLite2 database: {e}")
     return geoip_reader
 
+# Initialize geopy geocoder
+geolocator = None
+
+def get_geolocator():
+    """Lazy load the geopy geocoder"""
+    global geolocator
+    if geolocator is None:
+        try:
+            geolocator = Nominatim(user_agent="vmattoo-dev-trace")
+        except Exception as e:
+            print(f"Failed to initialize geopy: {e}")
+    return geolocator
+
+def reverse_geocode(lat: float, lng: float) -> Optional[str]:
+    """Reverse geocode coordinates to approximate street location"""
+    try:
+        locator = get_geolocator()
+        if not locator:
+            return None
+        
+        # Use reverse geocoding with timeout
+        location = locator.reverse((lat, lng), timeout=5, exactly_one=True)
+        
+        if location:
+            address = location.raw.get('address', {})
+            # Try to get street-level information
+            street = address.get('road') or address.get('street') or address.get('pedestrian')
+            house_number = address.get('house_number')
+            
+            if street:
+                if house_number:
+                    return f"{house_number} {street}"
+                return street
+            
+            # Fallback to suburb/neighborhood if no street
+            suburb = address.get('suburb') or address.get('neighbourhood')
+            if suburb:
+                return suburb
+                
+            # Last resort: city
+            city = address.get('city') or address.get('town')
+            if city:
+                return city
+                
+    except (GeocoderTimedOut, GeocoderServiceError) as e:
+        print(f"Geocoding error: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected geocoding error: {e}")
+        return None
+    
+    return None
+
 def is_private_ip(ip: str) -> bool:
     """Check if an IP is private/localhost"""
     if ip in ['127.0.0.1', 'localhost', 'unknown']:
@@ -145,11 +200,19 @@ def get_geolocation(request: Request):
     try:
         response = reader.city(client_ip)
         
+        lat = response.location.latitude if response.location.latitude else None
+        lng = response.location.longitude if response.location.longitude else None
+        
+        # Reverse geocode to get approximate street location
+        street_location = None
+        if lat and lng:
+            street_location = reverse_geocode(lat, lng)
+        
         return {
             "ip": client_ip,
             "geo": {
-                "lat": response.location.latitude if response.location.latitude else None,
-                "lng": response.location.longitude if response.location.longitude else None,
+                "lat": lat,
+                "lng": lng,
                 "city": response.city.names.get('en', 'Unknown') if response.city else 'Unknown',
                 "region": response.subdivisions[0].names.get('en', 'Unknown') if response.subdivisions else 'Unknown',
                 "country": response.country.names.get('en', 'Unknown') if response.country else 'Unknown',
@@ -157,6 +220,7 @@ def get_geolocation(request: Request):
                 "timezone": response.location.time_zone if response.location.time_zone else 'UTC',
                 "isp": response.traits.isp or response.traits.organization or 'Unknown' if response.traits else 'Unknown',
                 "org": response.traits.organization or 'Unknown' if response.traits else 'Unknown',
+                "streetLocation": street_location,  # Approximate street location from reverse geocoding
             }
         }
     except geoip2.errors.AddressNotFoundError:

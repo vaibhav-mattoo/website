@@ -4,3 +4,4 @@ pydantic
 httpx
 geoip2
 maxminddb
+geopy

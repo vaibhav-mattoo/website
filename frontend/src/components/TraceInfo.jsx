@@ -153,6 +153,12 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
                     {geoInfo.geo.city}, {geoInfo.geo.region}, {geoInfo.geo.country}
                   </span>
                 </div>
+                {geoInfo.geo.streetLocation && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: currentColor }}>Street:</span>
+                    <span style={{ marginLeft: '15px' }}>{geoInfo.geo.streetLocation}</span>
+                  </div>
+                )}
                 <div style={{ marginBottom: '10px' }}>
                   <span style={{ color: currentColor }}>Coordinates:</span>
                   <span style={{ marginLeft: '15px' }}>
