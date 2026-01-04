@@ -83,6 +83,18 @@ jobs:
           source: "backend/*"
           target: "/home/opc/backend"
           strip_components: 1 # Removes "backend/" so files land directly in target
+      
+      # Upload backend/data/ directory separately to ensure GeoLite2 database is included
+      - name: Upload backend data directory
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          source: "backend/data/**"
+          target: "/home/opc/backend/data"
+          strip_components: 2 # Removes "backend/data/" so files land in target/data
 
       # Install Python deps and restart service
       - name: Install requirements and restart service

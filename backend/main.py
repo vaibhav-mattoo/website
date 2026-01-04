@@ -121,24 +121,69 @@ def get_notes():
 
 
 # Initialize GeoLite2 database reader
-DB_PATH = Path(__file__).parent / "data" / "GeoLite2-City.mmdb"
+# Try multiple possible paths for the database file
+def find_geolite2_database():
+    """Find the GeoLite2 database file in common locations"""
+    # Get the directory where this script is located
+    script_dir = Path(__file__).parent.resolve()
+    
+    possible_paths = [
+        # Relative to this file (most common in deployment)
+        script_dir / "data" / "GeoLite2-City.mmdb",
+        # Current working directory (for different execution contexts)
+        Path.cwd() / "data" / "GeoLite2-City.mmdb",
+        Path.cwd() / "backend" / "data" / "GeoLite2-City.mmdb",
+        # Deployment path
+        Path("/home/opc/backend/data/GeoLite2-City.mmdb"),
+        # Development paths
+        Path("/home/fuckotheclown/Public/socials/website/yourinfo/data/GeoLite2-City.mmdb"),
+        Path("/home/fuckotheclown/Public/socials/website/backend/data/GeoLite2-City.mmdb"),
+    ]
+    
+    print(f"Searching for GeoLite2 database...")
+    print(f"Script directory: {script_dir}")
+    print(f"Current working directory: {Path.cwd()}")
+    
+    for db_path in possible_paths:
+        if db_path.exists():
+            file_size = db_path.stat().st_size / (1024 * 1024)  # Size in MB
+            print(f"Found GeoLite2 database at: {db_path} ({file_size:.2f} MB)")
+            return db_path
+        else:
+            print(f"  Not found: {db_path}")
+    
+    print("ERROR: GeoLite2 database not found in any of these locations:")
+    for path in possible_paths:
+        print(f"  - {path}")
+    return None
+
 geoip_reader = None
+DB_PATH = None
 
 def get_geoip_reader():
     """Lazy load the GeoIP database reader"""
-    global geoip_reader
+    global geoip_reader, DB_PATH
+    
     if geoip_reader is None:
-        db_file = Path(__file__).parent / "data" / "GeoLite2-City.mmdb"
-        if db_file.exists():
+        # Find the database file
+        if DB_PATH is None:
+            DB_PATH = find_geolite2_database()
+        
+        if DB_PATH and DB_PATH.exists():
             try:
-                geoip_reader = geoip2.database.Reader(str(db_file))
-                print(f"GeoLite2 database loaded successfully from: {db_file}")
+                geoip_reader = geoip2.database.Reader(str(DB_PATH))
+                print(f"GeoLite2 database loaded successfully from: {DB_PATH}")
+                print(f"Database file size: {DB_PATH.stat().st_size / (1024*1024):.2f} MB")
             except Exception as e:
-                print(f"Failed to load GeoLite2 database from {db_file}: {e}")
+                print(f"Failed to load GeoLite2 database from {DB_PATH}: {e}")
                 import traceback
                 traceback.print_exc()
+                geoip_reader = None
         else:
-            print(f"GeoLite2 database file not found at: {db_file}")
+            print(f"GeoLite2 database file not found. Searched in multiple locations.")
+            if DB_PATH:
+                print(f"Expected location: {DB_PATH}")
+    
     return geoip_reader
 
 # Initialize geopy geocoder
@@ -320,13 +365,18 @@ async def get_geolocation(request: Request):
     # Use local GeoLite2 database
     reader = get_geoip_reader()
     if not reader:
-        print(f"GeoLite2 database reader not available for IP: {client_ip}")
+        error_msg = f"GeoLite2 database reader not available for IP: {client_ip}"
+        if DB_PATH:
+            error_msg += f" (searched for database, found at: {DB_PATH} but failed to load)"
+        else:
+            error_msg += " (database file not found)"
+        print(error_msg)
         return {
             "ip": client_ip,
             "geo": None,
             "visit_count": visitor_info["visit_count"],
             "referer": visitor_info["last_referer"],
-            "error": "GeoLite2 database not loaded"
+            "error": "GeoLite2 database not loaded - check server logs for details"
         }
     
     try:
