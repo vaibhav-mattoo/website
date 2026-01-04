@@ -6,6 +6,7 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
   const [clientInfo, setClientInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [geoInfo, setGeoInfo] = useState(null);
+  const [allVisitors, setAllVisitors] = useState(null);
 
   const currentColor = theme === "dark"
     ? (colorOptions?.[accentColor || "green"]?.dark || "#b5e853")
@@ -41,6 +42,21 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
         }
       } catch (err) {
         console.warn('Geolocation API not available:', err);
+      }
+
+      // Fetch all visitors for the wall
+      try {
+        console.log('Fetching all visitors...');
+        const visitorsResponse = await fetch('/api/visitors');
+        if (visitorsResponse.ok) {
+          const visitorsData = await visitorsResponse.json();
+          console.log('Visitors data:', visitorsData);
+          setAllVisitors(visitorsData);
+        } else {
+          console.warn('Visitors API returned error:', visitorsResponse.status);
+        }
+      } catch (err) {
+        console.warn('Visitors API not available:', err);
       }
 
       setLoading(false);
@@ -127,6 +143,83 @@ function TraceInfo({ theme, accentColor, colorOptions }) {
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      {/* Wall of Visitors */}
+      {allVisitors && allVisitors.visitors && allVisitors.visitors.length > 0 && (
+        <div style={{
+          marginBottom: '40px',
+          fontFamily: 'monospace',
+          fontSize: '0.85rem',
+          background: theme === 'dark' ? '#0d0d0d' : '#f9f9f9',
+          border: `2px solid ${currentColor}`,
+          padding: '20px',
+          borderRadius: '4px'
+        }}>
+          <div style={{ marginBottom: '15px' }}>
+            <span style={{ color: currentColor, fontSize: '1.1rem', fontWeight: 'bold' }}>
+              $ wall
+            </span>
+            <span style={{ color: 'var(--dim-color)', marginLeft: '10px', fontSize: '0.9rem' }}>
+              ({allVisitors.total} {allVisitors.total === 1 ? 'visitor' : 'visitors'})
+            </span>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '15px',
+            marginTop: '15px'
+          }}>
+            {allVisitors.visitors.map((visitor, idx) => (
+              <div
+                key={visitor.ip}
+                style={{
+                  border: `1px solid ${theme === 'dark' ? '#333' : '#ddd'}`,
+                  padding: '12px',
+                  borderRadius: '4px',
+                  background: theme === 'dark' ? '#1a1a1a' : '#ffffff',
+                  lineHeight: '1.6'
+                }}
+              >
+                <div style={{ marginBottom: '8px' }}>
+                  <span style={{ color: currentColor, fontWeight: 'bold' }}>IP:</span>
+                  <span style={{ color: 'var(--main-text-color)', marginLeft: '8px', fontFamily: 'monospace' }}>
+                    {visitor.ip}
+                  </span>
+                </div>
+                {visitor.streetLocation && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: currentColor }}>Street:</span>
+                    <span style={{ color: 'var(--main-text-color)', marginLeft: '8px' }}>
+                      {visitor.streetLocation}
+                    </span>
+                  </div>
+                )}
+                {visitor.geo ? (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: currentColor }}>Location:</span>
+                    <span style={{ color: 'var(--main-text-color)', marginLeft: '8px' }}>
+                      {visitor.geo.city}, {visitor.geo.region}, {visitor.geo.country}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: currentColor }}>Location:</span>
+                    <span style={{ color: 'var(--dim-color)', marginLeft: '8px', fontStyle: 'italic' }}>
+                      {visitor.ip === '127.0.0.1' || visitor.ip.startsWith('192.168.') || visitor.ip.startsWith('10.') ? 'Private IP' : 'Unknown'}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span style={{ color: currentColor }}>Visits:</span>
+                  <span style={{ color: 'var(--main-text-color)', marginLeft: '8px', fontWeight: 'bold' }}>
+                    {visitor.visit_count} {visitor.visit_count === 1 ? 'time' : 'times'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* IP Address and Location - Prominently displayed at top */}
       {geoInfo && (
         <div style={{

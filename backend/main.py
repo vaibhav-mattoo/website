@@ -552,3 +552,87 @@ async def get_geolocation(request: Request):
             "referer": visitor_info["last_referer"],
             "error": str(e)
         }
+
+# Route 4: Get all visitors with their geolocation
+@app.get("/api/visitors")
+async def get_all_visitors():
+    """
+    Get all visitors from the database with their geolocation information.
+    Returns a list of visitors sorted by visit count (descending).
+    """
+    try:
+        # Get all visitors from database
+        db = await aiosqlite.connect(str(VISITORS_DB_PATH))
+        try:
+            cursor = await db.execute(
+                "SELECT ip, visit_count, first_visit, last_visit FROM visitors ORDER BY visit_count DESC, last_visit DESC"
+            )
+            rows = await cursor.fetchall()
+            
+            visitors = []
+            reader = get_geoip_reader()
+            
+            for row in rows:
+                ip = row[0]
+                visit_count = row[1]
+                first_visit = row[2]
+                last_visit = row[3]
+                
+                visitor_data = {
+                    "ip": ip,
+                    "visit_count": visit_count,
+                    "first_visit": first_visit,
+                    "last_visit": last_visit,
+                    "geo": None,
+                    "streetLocation": None
+                }
+                
+                # Skip geolocation for private IPs
+                if not is_private_ip(ip) and reader:
+                    try:
+                        response = reader.city(ip)
+                        
+                        lat = response.location.latitude if response.location.latitude else None
+                        lng = response.location.longitude if response.location.longitude else None
+                        
+                        # Reverse geocode to get approximate street location
+                        street_location = None
+                        if lat and lng:
+                            try:
+                                street_location = reverse_geocode(lat, lng)
+                            except Exception as e:
+                                print(f"Reverse geocoding error for {ip}: {e}")
+                                street_location = None
+                        
+                        visitor_data["geo"] = {
+                            "lat": lat,
+                            "lng": lng,
+                            "city": response.city.names.get('en', 'Unknown') if response.city else 'Unknown',
+                            "region": response.subdivisions[0].names.get('en', 'Unknown') if response.subdivisions else 'Unknown',
+                            "country": response.country.names.get('en', 'Unknown') if response.country else 'Unknown',
+                            "countryCode": response.country.iso_code if response.country else 'XX',
+                        }
+                        visitor_data["streetLocation"] = street_location
+                    except geoip2.errors.AddressNotFoundError:
+                        visitor_data["geo"] = None
+                    except Exception as e:
+                        print(f"Error getting geolocation for {ip}: {e}")
+                        visitor_data["geo"] = None
+                
+                visitors.append(visitor_data)
+            
+            return {
+                "visitors": visitors,
+                "total": len(visitors)
+            }
+        finally:
+            await db.close()
+    except Exception as e:
+        print(f"Error getting all visitors: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "visitors": [],
+            "total": 0,
+            "error": str(e)
+        }
