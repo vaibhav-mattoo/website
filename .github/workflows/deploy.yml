@@ -72,6 +72,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Ensure data directory exists and copy database file
+      - name: Prepare database file
+        run: |
+          mkdir -p backend/data
+          # Copy database from yourinfo if it exists, otherwise use the one in backend/data
+          if [ -f "yourinfo/data/GeoLite2-City.mmdb" ]; then
+            echo "Copying database from yourinfo directory..."
+            cp yourinfo/data/GeoLite2-City.mmdb backend/data/GeoLite2-City.mmdb
+          fi
+          # Verify the file exists and is the correct size
+          if [ -f "backend/data/GeoLite2-City.mmdb" ]; then
+            FILE_SIZE=$(stat -c%s "backend/data/GeoLite2-City.mmdb")
+            FILE_SIZE_MB=$((FILE_SIZE / 1024 / 1024))
+            echo "Database file size: ${FILE_SIZE_MB} MB"
+            if [ $FILE_SIZE_MB -lt 50 ]; then
+              echo "ERROR: Database file is too small (${FILE_SIZE_MB} MB). Expected ~63 MB."
+              exit 1
+            else
+              echo "✅ Database file is ready for deployment (${FILE_SIZE_MB} MB)"
+            fi
+          else
+            echo "ERROR: Database file not found"
+            exit 1
+          fi
+
       # Upload backend/ folder to /home/opc/backend
       - name: Upload backend code
         uses: appleboy/scp-action@master
@@ -92,9 +117,36 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           port: 2222
-          source: "backend/data/**"
+          source: "backend/data/GeoLite2-City.mmdb"
           target: "/home/opc/backend/data"
-          strip_components: 2 # Removes "backend/data/" so files land in target/data
+          strip_components: 2 # Removes "backend/data/" so file lands in target/data
+      
+      # Verify the database file was uploaded correctly
+      - name: Verify database file on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 2222
+          script: |
+            set -e
+            DB_FILE="/home/opc/backend/data/GeoLite2-City.mmdb"
+            if [ -f "$DB_FILE" ]; then
+              FILE_SIZE=$(stat -c%s "$DB_FILE")
+              FILE_SIZE_MB=$((FILE_SIZE / 1024 / 1024))
+              echo "Database file size on server: ${FILE_SIZE_MB} MB"
+              if [ $FILE_SIZE_MB -lt 50 ]; then
+                echo "ERROR: Database file is too small (${FILE_SIZE_MB} MB). Expected ~63 MB."
+                echo "The file may be corrupted or incomplete during transfer."
+                exit 1
+              else
+                echo "✅ Database file size is correct on server (${FILE_SIZE_MB} MB)"
+              fi
+            else
+              echo "ERROR: Database file not found at $DB_FILE"
+              exit 1
+            fi
 
       # Install Python deps and restart service
       - name: Install requirements and restart service

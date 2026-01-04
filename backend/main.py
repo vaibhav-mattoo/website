@@ -170,15 +170,22 @@ def get_geoip_reader():
             DB_PATH = find_geolite2_database()
         
         if DB_PATH and DB_PATH.exists():
-            try:
-                geoip_reader = geoip2.database.Reader(str(DB_PATH))
-                print(f"GeoLite2 database loaded successfully from: {DB_PATH}")
-                print(f"Database file size: {DB_PATH.stat().st_size / (1024*1024):.2f} MB")
-            except Exception as e:
-                print(f"Failed to load GeoLite2 database from {DB_PATH}: {e}")
-                import traceback
-                traceback.print_exc()
+            # Check file size first - should be around 63 MB
+            file_size_mb = DB_PATH.stat().st_size / (1024 * 1024)
+            if file_size_mb < 50:
+                print(f"ERROR: GeoLite2 database file is too small ({file_size_mb:.2f} MB). Expected ~63 MB.")
+                print(f"File may be corrupted or incomplete: {DB_PATH}")
                 geoip_reader = None
+            else:
+                try:
+                    geoip_reader = geoip2.database.Reader(str(DB_PATH))
+                    print(f"GeoLite2 database loaded successfully from: {DB_PATH}")
+                    print(f"Database file size: {file_size_mb:.2f} MB")
+                except Exception as e:
+                    print(f"Failed to load GeoLite2 database from {DB_PATH}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    geoip_reader = None
         else:
             print(f"GeoLite2 database file not found. Searched in multiple locations.")
             if DB_PATH:
@@ -225,12 +232,22 @@ def get_geoip_error_details():
         except:
             pass
         
-        # Try to load it to see if there are any errors
+        # Check file size
         try:
-            test_reader = geoip2.database.Reader(str(DB_PATH))
-            test_reader.close()
+            file_size_mb = DB_PATH.stat().st_size / (1024 * 1024)
+            error_details["database_size_mb"] = round(file_size_mb, 2)
+            
+            if file_size_mb < 50:
+                error_details["error_message"] = f"Database file is too small ({file_size_mb:.2f} MB). Expected ~63 MB. File may be corrupted or incomplete during deployment."
+            else:
+                # Try to load it to see if there are any errors
+                try:
+                    test_reader = geoip2.database.Reader(str(DB_PATH))
+                    test_reader.close()
+                except Exception as e:
+                    error_details["error_message"] = f"Database file exists but failed to load: {str(e)}"
         except Exception as e:
-            error_details["error_message"] = f"Database file exists but failed to load: {str(e)}"
+            error_details["error_message"] = f"Error checking database file: {str(e)}"
     else:
         error_details["error_message"] = "Database file not found in any searched location"
         if DB_PATH:
